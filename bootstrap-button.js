@@ -1,96 +1,77 @@
-/* ============================================================
- * bootstrap-button.js v2.1.0
- * http://twitter.github.com/bootstrap/javascript.html#buttons
- * ============================================================
- * Copyright 2012 Twitter, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ============================================================ */
+$(function () {
 
+    module("bootstrap-buttons")
 
-!function ($) {
+      test("should be defined on jquery object", function () {
+        ok($(document.body).button, 'button method is defined')
+      })
 
-  "use strict"; // jshint ;_;
+      test("should return element", function () {
+        ok($(document.body).button()[0] == document.body, 'document.body returned')
+      })
 
+      test("should return set state to loading", function () {
+        var btn = $('<button class="btn" data-loading-text="fat">mdo</button>')
+        equals(btn.html(), 'mdo', 'btn text equals mdo')
+        btn.button('loading')
+        equals(btn.html(), 'fat', 'btn text equals fat')
+        stop()
+        setTimeout(function () {
+          ok(btn.attr('disabled'), 'btn is disabled')
+          ok(btn.hasClass('disabled'), 'btn has disabled class')
+          start()
+        }, 0)
+      })
 
- /* BUTTON PUBLIC CLASS DEFINITION
-  * ============================== */
+      test("should return reset state", function () {
+        var btn = $('<button class="btn" data-loading-text="fat">mdo</button>')
+        equals(btn.html(), 'mdo', 'btn text equals mdo')
+        btn.button('loading')
+        equals(btn.html(), 'fat', 'btn text equals fat')
+        stop()
+        setTimeout(function () {
+          ok(btn.attr('disabled'), 'btn is disabled')
+          ok(btn.hasClass('disabled'), 'btn has disabled class')
+          start()
+          stop()
+        }, 0)
+        btn.button('reset')
+        equals(btn.html(), 'mdo', 'btn text equals mdo')
+        setTimeout(function () {
+          ok(!btn.attr('disabled'), 'btn is not disabled')
+          ok(!btn.hasClass('disabled'), 'btn does not have disabled class')
+          start()
+        }, 0)
+      })
 
-  var Button = function (element, options) {
-    this.$element = $(element)
-    this.options = $.extend({}, $.fn.button.defaults, options)
-  }
+      test("should toggle active", function () {
+        var btn = $('<button class="btn">mdo</button>')
+        ok(!btn.hasClass('active'), 'btn does not have active class')
+        btn.button('toggle')
+        ok(btn.hasClass('active'), 'btn has class active')
+      })
 
-  Button.prototype.setState = function (state) {
-    var d = 'disabled'
-      , $el = this.$element
-      , data = $el.data()
-      , val = $el.is('input') ? 'val' : 'html'
+      test("should toggle active when btn children are clicked", function () {
+        var btn = $('<button class="btn" data-toggle="button">mdo</button>')
+          , inner = $('<i></i>')
+        btn
+          .append(inner)
+          .appendTo($('#qunit-fixture'))
+        ok(!btn.hasClass('active'), 'btn does not have active class')
+        inner.click()
+        ok(btn.hasClass('active'), 'btn has class active')
+      })
 
-    state = state + 'Text'
-    data.resetText || $el.data('resetText', $el[val]())
+     test("should toggle active when btn children are clicked within btn-group", function () {
+        var btngroup = $('<div class="btn-group" data-toggle="buttons-checkbox"></div>')
+          , btn = $('<button class="btn">fat</button>')
+          , inner = $('<i></i>')
+        btngroup
+          .append(btn.append(inner))
+          .appendTo($('#qunit-fixture'))
+        ok(!btn.hasClass('active'), 'btn does not have active class')
+        inner.click()
+        ok(btn.hasClass('active'), 'btn has class active')
+      })
 
-    $el[val](data[state] || this.options[state])
-
-    // push to event loop to allow forms to submit
-    setTimeout(function () {
-      state == 'loadingText' ?
-        $el.addClass(d).attr(d, d) :
-        $el.removeClass(d).removeAttr(d)
-    }, 0)
-  }
-
-  Button.prototype.toggle = function () {
-    var $parent = this.$element.parent('[data-toggle="buttons-radio"]')
-
-    $parent && $parent
-      .find('.active')
-      .removeClass('active')
-
-    this.$element.toggleClass('active')
-  }
-
-
- /* BUTTON PLUGIN DEFINITION
-  * ======================== */
-
-  $.fn.button = function (option) {
-    return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('button')
-        , options = typeof option == 'object' && option
-      if (!data) $this.data('button', (data = new Button(this, options)))
-      if (option == 'toggle') data.toggle()
-      else if (option) data.setState(option)
-    })
-  }
-
-  $.fn.button.defaults = {
-    loadingText: 'loading...'
-  }
-
-  $.fn.button.Constructor = Button
-
-
- /* BUTTON DATA-API
-  * =============== */
-
-  $(function () {
-    $('body').on('click.button.data-api', '[data-toggle^=button]', function ( e ) {
-      var $btn = $(e.target)
-      if (!$btn.hasClass('btn')) $btn = $btn.closest('.btn')
-      $btn.button('toggle')
-    })
-  })
-
-}(window.jQuery);
+})

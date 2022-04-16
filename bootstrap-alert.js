@@ -1,90 +1,56 @@
-/* ==========================================================
- * bootstrap-alert.js v2.1.0
- * http://twitter.github.com/bootstrap/javascript.html#alerts
- * ==========================================================
- * Copyright 2012 Twitter, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ========================================================== */
+$(function () {
 
+    module("bootstrap-alerts")
 
-!function ($) {
+      test("should be defined on jquery object", function () {
+        ok($(document.body).alert, 'alert method is defined')
+      })
 
-  "use strict"; // jshint ;_;
+      test("should return element", function () {
+        ok($(document.body).alert()[0] == document.body, 'document.body returned')
+      })
 
+      test("should fade element out on clicking .close", function () {
+        var alertHTML = '<div class="alert-message warning fade in">'
+          + '<a class="close" href="#" data-dismiss="alert">×</a>'
+          + '<p><strong>Holy guacamole!</strong> Best check yo self, you\'re not looking too good.</p>'
+          + '</div>'
+          , alert = $(alertHTML).alert()
 
- /* ALERT CLASS DEFINITION
-  * ====================== */
+        alert.find('.close').click()
 
-  var dismiss = '[data-dismiss="alert"]'
-    , Alert = function (el) {
-        $(el).on('click', dismiss, this.close)
-      }
+        ok(!alert.hasClass('in'), 'remove .in class on .close click')
+      })
 
-  Alert.prototype.close = function (e) {
-    var $this = $(this)
-      , selector = $this.attr('data-target')
-      , $parent
+      test("should remove element when clicking .close", function () {
+        $.support.transition = false
 
-    if (!selector) {
-      selector = $this.attr('href')
-      selector = selector && selector.replace(/.*(?=#[^\s]*$)/, '') //strip for ie7
-    }
+        var alertHTML = '<div class="alert-message warning fade in">'
+          + '<a class="close" href="#" data-dismiss="alert">×</a>'
+          + '<p><strong>Holy guacamole!</strong> Best check yo self, you\'re not looking too good.</p>'
+          + '</div>'
+          , alert = $(alertHTML).appendTo('#qunit-fixture').alert()
 
-    $parent = $(selector)
+        ok($('#qunit-fixture').find('.alert-message').length, 'element added to dom')
 
-    e && e.preventDefault()
+        alert.find('.close').click()
 
-    $parent.length || ($parent = $this.hasClass('alert') ? $this : $this.parent())
+        ok(!$('#qunit-fixture').find('.alert-message').length, 'element removed from dom')
+      })
 
-    $parent.trigger(e = $.Event('close'))
+      test("should not fire closed when close is prevented", function () {
+        $.support.transition = false
+        stop();
+        $('<div class="alert"/>')
+          .bind('close', function (e) {
+            e.preventDefault();
+            ok(true);
+            start();
+          })
+          .bind('closed', function () {
+            ok(false);
+          })
+          .alert('close')
+      })
 
-    if (e.isDefaultPrevented()) return
-
-    $parent.removeClass('in')
-
-    function removeElement() {
-      $parent
-        .trigger('closed')
-        .remove()
-    }
-
-    $.support.transition && $parent.hasClass('fade') ?
-      $parent.on($.support.transition.end, removeElement) :
-      removeElement()
-  }
-
-
- /* ALERT PLUGIN DEFINITION
-  * ======================= */
-
-  $.fn.alert = function (option) {
-    return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('alert')
-      if (!data) $this.data('alert', (data = new Alert(this)))
-      if (typeof option == 'string') data[option].call($this)
-    })
-  }
-
-  $.fn.alert.Constructor = Alert
-
-
- /* ALERT DATA-API
-  * ============== */
-
-  $(function () {
-    $('body').on('click.alert.data-api', dismiss, Alert.prototype.close)
-  })
-
-}(window.jQuery);
+})

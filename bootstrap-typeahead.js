@@ -1,300 +1,204 @@
-/* =============================================================
- * bootstrap-typeahead.js v2.1.0
- * http://twitter.github.com/bootstrap/javascript.html#typeahead
- * =============================================================
- * Copyright 2012 Twitter, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ============================================================ */
+$(function () {
 
+    module("bootstrap-typeahead")
 
-!function($){
-
-  "use strict"; // jshint ;_;
-
-
- /* TYPEAHEAD PUBLIC CLASS DEFINITION
-  * ================================= */
-
-  var Typeahead = function (element, options) {
-    this.$element = $(element)
-    this.options = $.extend({}, $.fn.typeahead.defaults, options)
-    this.matcher = this.options.matcher || this.matcher
-    this.sorter = this.options.sorter || this.sorter
-    this.highlighter = this.options.highlighter || this.highlighter
-    this.updater = this.options.updater || this.updater
-    this.$menu = $(this.options.menu).appendTo('body')
-    this.source = this.options.source
-    this.shown = false
-    this.listen()
-  }
-
-  Typeahead.prototype = {
-
-    constructor: Typeahead
-
-  , select: function () {
-      var val = this.$menu.find('.active').attr('data-value')
-      this.$element
-        .val(this.updater(val))
-        .change()
-      return this.hide()
-    }
-
-  , updater: function (item) {
-      return item
-    }
-
-  , show: function () {
-      var pos = $.extend({}, this.$element.offset(), {
-        height: this.$element[0].offsetHeight
+      test("should be defined on jquery object", function () {
+        ok($(document.body).typeahead, 'alert method is defined')
       })
 
-      this.$menu.css({
-        top: pos.top + pos.height
-      , left: pos.left
+      test("should return element", function () {
+        ok($(document.body).typeahead()[0] == document.body, 'document.body returned')
       })
 
-      this.$menu.show()
-      this.shown = true
-      return this
-    }
-
-  , hide: function () {
-      this.$menu.hide()
-      this.shown = false
-      return this
-    }
-
-  , lookup: function (event) {
-      var items
-
-      this.query = this.$element.val()
-
-      if (!this.query || this.query.length < this.options.minLength) {
-        return this.shown ? this.hide() : this
-      }
-
-      items = $.isFunction(this.source) ? this.source(this.query, $.proxy(this.process, this)) : this.source
-
-      return items ? this.process(items) : this
-    }
-
-  , process: function (items) {
-      var that = this
-
-      items = $.grep(items, function (item) {
-        return that.matcher(item)
+      test("should listen to an input", function () {
+        var $input = $('<input />')
+        $input.typeahead()
+        ok($input.data('events').blur, 'has a blur event')
+        ok($input.data('events').keypress, 'has a keypress event')
+        ok($input.data('events').keyup, 'has a keyup event')
+        if ($.browser.webkit || $.browser.msie) {
+          ok($input.data('events').keydown, 'has a keydown event')
+        } else {
+          ok($input.data('events').keydown, 'does not have a keydown event')
+        }
       })
 
-      items = this.sorter(items)
-
-      if (!items.length) {
-        return this.shown ? this.hide() : this
-      }
-
-      return this.render(items.slice(0, this.options.items)).show()
-    }
-
-  , matcher: function (item) {
-      return ~item.toLowerCase().indexOf(this.query.toLowerCase())
-    }
-
-  , sorter: function (items) {
-      var beginswith = []
-        , caseSensitive = []
-        , caseInsensitive = []
-        , item
-
-      while (item = items.shift()) {
-        if (!item.toLowerCase().indexOf(this.query.toLowerCase())) beginswith.push(item)
-        else if (~item.indexOf(this.query)) caseSensitive.push(item)
-        else caseInsensitive.push(item)
-      }
-
-      return beginswith.concat(caseSensitive, caseInsensitive)
-    }
-
-  , highlighter: function (item) {
-      var query = this.query.replace(/[\-\[\]{}()*+?.,\\\^$|#\s]/g, '\\$&')
-      return item.replace(new RegExp('(' + query + ')', 'ig'), function ($1, match) {
-        return '<strong>' + match + '</strong>'
-      })
-    }
-
-  , render: function (items) {
-      var that = this
-
-      items = $(items).map(function (i, item) {
-        i = $(that.options.item).attr('data-value', item)
-        i.find('a').html(that.highlighter(item))
-        return i[0]
+      test("should create a menu", function () {
+        var $input = $('<input />')
+        ok($input.typeahead().data('typeahead').$menu, 'has a menu')
       })
 
-      items.first().addClass('active')
-      this.$menu.html(items)
-      return this
-    }
+      test("should listen to the menu", function () {
+        var $input = $('<input />')
+          , $menu = $input.typeahead().data('typeahead').$menu
 
-  , next: function (event) {
-      var active = this.$menu.find('.active').removeClass('active')
-        , next = active.next()
+        ok($menu.data('events').mouseover, 'has a mouseover(pseudo: mouseenter)')
+        ok($menu.data('events').click, 'has a click')
+      })
 
-      if (!next.length) {
-        next = $(this.$menu.find('li')[0])
-      }
+      test("should show menu when query entered", function () {
+        var $input = $('<input />').typeahead({
+              source: ['aa', 'ab', 'ac']
+            })
+          , typeahead = $input.data('typeahead')
 
-      next.addClass('active')
-    }
+        $input.val('a')
+        typeahead.lookup()
 
-  , prev: function (event) {
-      var active = this.$menu.find('.active').removeClass('active')
-        , prev = active.prev()
+        ok(typeahead.$menu.is(":visible"), 'typeahead is visible')
+        equals(typeahead.$menu.find('li').length, 3, 'has 3 items in menu')
+        equals(typeahead.$menu.find('.active').length, 1, 'one item is active')
 
-      if (!prev.length) {
-        prev = this.$menu.find('li').last()
-      }
+        typeahead.$menu.remove()
+      })
 
-      prev.addClass('active')
-    }
+      test("should accept data source via synchronous function", function () {
+        var $input = $('<input />').typeahead({
+              source: function () {
+                return ['aa', 'ab', 'ac']
+              }
+            })
+          , typeahead = $input.data('typeahead')
 
-  , listen: function () {
-      this.$element
-        .on('blur',     $.proxy(this.blur, this))
-        .on('keypress', $.proxy(this.keypress, this))
-        .on('keyup',    $.proxy(this.keyup, this))
+        $input.val('a')
+        typeahead.lookup()
 
-      if ($.browser.webkit || $.browser.msie) {
-        this.$element.on('keydown', $.proxy(this.keydown, this))
-      }
+        ok(typeahead.$menu.is(":visible"), 'typeahead is visible')
+        equals(typeahead.$menu.find('li').length, 3, 'has 3 items in menu')
+        equals(typeahead.$menu.find('.active').length, 1, 'one item is active')
 
-      this.$menu
-        .on('click', $.proxy(this.click, this))
-        .on('mouseenter', 'li', $.proxy(this.mouseenter, this))
-    }
+        typeahead.$menu.remove()
+      })
 
-  , move: function (e) {
-      if (!this.shown) return
+      test("should accept data source via asynchronous function", function () {
+        var $input = $('<input />').typeahead({
+              source: function (query, process) {
+                process(['aa', 'ab', 'ac'])
+              }
+            })
+          , typeahead = $input.data('typeahead')
 
-      switch(e.keyCode) {
-        case 9: // tab
-        case 13: // enter
-        case 27: // escape
-          e.preventDefault()
-          break
+        $input.val('a')
+        typeahead.lookup()
 
-        case 38: // up arrow
-          e.preventDefault()
-          this.prev()
-          break
+        ok(typeahead.$menu.is(":visible"), 'typeahead is visible')
+        equals(typeahead.$menu.find('li').length, 3, 'has 3 items in menu')
+        equals(typeahead.$menu.find('.active').length, 1, 'one item is active')
 
-        case 40: // down arrow
-          e.preventDefault()
-          this.next()
-          break
-      }
+        typeahead.$menu.remove()
+      })
 
-      e.stopPropagation()
-    }
+      test("should not explode when regex chars are entered", function () {
+        var $input = $('<input />').typeahead({
+              source: ['aa', 'ab', 'ac', 'mdo*', 'fat+']
+            })
+          , typeahead = $input.data('typeahead')
 
-  , keydown: function (e) {
-      this.suppressKeyPressRepeat = !~$.inArray(e.keyCode, [40,38,9,13,27])
-      this.move(e)
-    }
+        $input.val('+')
+        typeahead.lookup()
 
-  , keypress: function (e) {
-      if (this.suppressKeyPressRepeat) return
-      this.move(e)
-    }
+        ok(typeahead.$menu.is(":visible"), 'typeahead is visible')
+        equals(typeahead.$menu.find('li').length, 1, 'has 1 item in menu')
+        equals(typeahead.$menu.find('.active').length, 1, 'one item is active')
 
-  , keyup: function (e) {
-      switch(e.keyCode) {
-        case 40: // down arrow
-        case 38: // up arrow
-          break
+        typeahead.$menu.remove()
+      })
 
-        case 9: // tab
-        case 13: // enter
-          if (!this.shown) return
-          this.select()
-          break
+      test("should hide menu when query entered", function () {
+        stop()
+        var $input = $('<input />').typeahead({
+              source: ['aa', 'ab', 'ac']
+            })
+          , typeahead = $input.data('typeahead')
 
-        case 27: // escape
-          if (!this.shown) return
-          this.hide()
-          break
+        $input.val('a')
+        typeahead.lookup()
 
-        default:
-          this.lookup()
-      }
+        ok(typeahead.$menu.is(":visible"), 'typeahead is visible')
+        equals(typeahead.$menu.find('li').length, 3, 'has 3 items in menu')
+        equals(typeahead.$menu.find('.active').length, 1, 'one item is active')
 
-      e.stopPropagation()
-      e.preventDefault()
-  }
+        $input.blur()
 
-  , blur: function (e) {
-      var that = this
-      setTimeout(function () { that.hide() }, 150)
-    }
+        setTimeout(function () {
+          ok(!typeahead.$menu.is(":visible"), "typeahead is no longer visible")
+          start()
+        }, 200)
 
-  , click: function (e) {
-      e.stopPropagation()
-      e.preventDefault()
-      this.select()
-    }
+        typeahead.$menu.remove()
+      })
 
-  , mouseenter: function (e) {
-      this.$menu.find('.active').removeClass('active')
-      $(e.currentTarget).addClass('active')
-    }
+      test("should set next item when down arrow is pressed", function () {
+        var $input = $('<input />').typeahead({
+              source: ['aa', 'ab', 'ac']
+            })
+          , typeahead = $input.data('typeahead')
 
-  }
+        $input.val('a')
+        typeahead.lookup()
 
+        ok(typeahead.$menu.is(":visible"), 'typeahead is visible')
+        equals(typeahead.$menu.find('li').length, 3, 'has 3 items in menu')
+        equals(typeahead.$menu.find('.active').length, 1, 'one item is active')
+        ok(typeahead.$menu.find('li').first().hasClass('active'), "first item is active")
 
-  /* TYPEAHEAD PLUGIN DEFINITION
-   * =========================== */
+        $input.trigger({
+          type: 'keydown'
+        , keyCode: 40
+        })
 
-  $.fn.typeahead = function (option) {
-    return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('typeahead')
-        , options = typeof option == 'object' && option
-      if (!data) $this.data('typeahead', (data = new Typeahead(this, options)))
-      if (typeof option == 'string') data[option]()
-    })
-  }
-
-  $.fn.typeahead.defaults = {
-    source: []
-  , items: 8
-  , menu: '<ul class="typeahead dropdown-menu"></ul>'
-  , item: '<li><a href="#"></a></li>'
-  , minLength: 1
-  }
-
-  $.fn.typeahead.Constructor = Typeahead
+        ok(typeahead.$menu.find('li').first().next().hasClass('active'), "second item is active")
 
 
- /*   TYPEAHEAD DATA-API
-  * ================== */
+        $input.trigger({
+          type: 'keydown'
+        , keyCode: 38
+        })
 
-  $(function () {
-    $('body').on('focus.typeahead.data-api', '[data-provide="typeahead"]', function (e) {
-      var $this = $(this)
-      if ($this.data('typeahead')) return
-      e.preventDefault()
-      $this.typeahead($this.data())
-    })
-  })
+        ok(typeahead.$menu.find('li').first().hasClass('active'), "first item is active")
 
-}(window.jQuery);
+        typeahead.$menu.remove()
+      })
+
+
+      test("should set input value to selected item", function () {
+        var $input = $('<input />').typeahead({
+              source: ['aa', 'ab', 'ac']
+            })
+          , typeahead = $input.data('typeahead')
+          , changed = false
+
+        $input.val('a')
+        typeahead.lookup()
+
+        $input.change(function() { changed = true });
+
+        $(typeahead.$menu.find('li')[2]).mouseover().click()
+
+        equals($input.val(), 'ac', 'input value was correctly set')
+        ok(!typeahead.$menu.is(':visible'), 'the menu was hidden')
+        ok(changed, 'a change event was fired')
+
+        typeahead.$menu.remove()
+      })
+
+      test("should start querying when minLength is met", function () {
+        var $input = $('<input />').typeahead({
+              source: ['aaaa', 'aaab', 'aaac'],
+              minLength: 3
+            })
+          , typeahead = $input.data('typeahead')
+
+        $input.val('aa')
+        typeahead.lookup()
+
+        equals(typeahead.$menu.find('li').length, 0, 'has 0 items in menu')
+
+        $input.val('aaa')
+        typeahead.lookup()
+
+        equals(typeahead.$menu.find('li').length, 3, 'has 3 items in menu')
+
+        typeahead.$menu.remove()
+      })
+})

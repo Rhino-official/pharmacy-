@@ -1,103 +1,107 @@
-/* ===========================================================
- * bootstrap-popover.js v2.1.0
- * http://twitter.github.com/bootstrap/javascript.html#popovers
- * ===========================================================
- * Copyright 2012 Twitter, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * =========================================================== */
+$(function () {
 
+    module("bootstrap-popover")
 
-!function ($) {
+      test("should be defined on jquery object", function () {
+        var div = $('<div></div>')
+        ok(div.popover, 'popover method is defined')
+      })
 
-  "use strict"; // jshint ;_;
+      test("should return element", function () {
+        var div = $('<div></div>')
+        ok(div.popover() == div, 'document.body returned')
+      })
 
+      test("should render popover element", function () {
+        $.support.transition = false
+        var popover = $('<a href="#" title="mdo" data-content="http://twitter.com/mdo">@mdo</a>')
+          .appendTo('#qunit-fixture')
+          .popover('show')
 
- /* POPOVER PUBLIC CLASS DEFINITION
-  * =============================== */
+        ok($('.popover').length, 'popover was inserted')
+        popover.popover('hide')
+        ok(!$(".popover").length, 'popover removed')
+      })
 
-  var Popover = function (element, options) {
-    this.init('popover', element, options)
-  }
+      test("should store popover instance in popover data object", function () {
+        $.support.transition = false
+        var popover = $('<a href="#" title="mdo" data-content="http://twitter.com/mdo">@mdo</a>')
+          .popover()
 
+        ok(!!popover.data('popover'), 'popover instance exists')
+      })
 
-  /* NOTE: POPOVER EXTENDS BOOTSTRAP-TOOLTIP.js
-     ========================================== */
+      test("should get title and content from options", function () {
+        $.support.transition = false
+        var popover = $('<a href="#">@fat</a>')
+          .appendTo('#qunit-fixture')
+          .popover({
+            title: function () {
+              return '@fat'
+            }
+          , content: function () {
+              return 'loves writing tests （╯°□°）╯︵ ┻━┻'
+            }
+          })
 
-  Popover.prototype = $.extend({}, $.fn.tooltip.Constructor.prototype, {
+        popover.popover('show')
 
-    constructor: Popover
+        ok($('.popover').length, 'popover was inserted')
+        equals($('.popover .popover-title').text(), '@fat', 'title correctly inserted')
+        equals($('.popover .popover-content').text(), 'loves writing tests （╯°□°）╯︵ ┻━┻', 'content correctly inserted')
 
-  , setContent: function () {
-      var $tip = this.tip()
-        , title = this.getTitle()
-        , content = this.getContent()
+        popover.popover('hide')
+        ok(!$('.popover').length, 'popover was removed')
+        $('#qunit-fixture').empty()
+      })
 
-      $tip.find('.popover-title')[this.options.html ? 'html' : 'text'](title)
-      $tip.find('.popover-content > *')[this.options.html ? 'html' : 'text'](content)
+      test("should get title and content from attributes", function () {
+        $.support.transition = false
+        var popover = $('<a href="#" title="@mdo" data-content="loves data attributes (づ｡◕‿‿◕｡)づ ︵ ┻━┻" >@mdo</a>')
+          .appendTo('#qunit-fixture')
+          .popover()
+          .popover('show')
 
-      $tip.removeClass('fade top bottom left right in')
-    }
+        ok($('.popover').length, 'popover was inserted')
+        equals($('.popover .popover-title').text(), '@mdo', 'title correctly inserted')
+        equals($('.popover .popover-content').text(), "loves data attributes (づ｡◕‿‿◕｡)づ ︵ ┻━┻", 'content correctly inserted')
 
-  , hasContent: function () {
-      return this.getTitle() || this.getContent()
-    }
+        popover.popover('hide')
+        ok(!$('.popover').length, 'popover was removed')
+        $('#qunit-fixture').empty()
+      })
+    
+      test("should respect custom classes", function() {
+        $.support.transition = false
+        var popover = $('<a href="#">@fat</a>')
+          .appendTo('#qunit-fixture')
+          .popover({
+            title: 'Test'
+          , content: 'Test'
+          , template: '<div class="popover foobar"><div class="arrow"></div><div class="inner"><h3 class="title"></h3><div class="content"><p></p></div></div></div>'
+          })
+        
+        popover.popover('show')
 
-  , getContent: function () {
-      var content
-        , $e = this.$element
-        , o = this.options
+        ok($('.popover').length, 'popover was inserted')
+        ok($('.popover').hasClass('foobar'), 'custom class is present')
 
-      content = $e.attr('data-content')
-        || (typeof o.content == 'function' ? o.content.call($e[0]) :  o.content)
+        popover.popover('hide')
+        ok(!$('.popover').length, 'popover was removed')
+        $('#qunit-fixture').empty()
+      })
 
-      return content
-    }
-
-  , tip: function () {
-      if (!this.$tip) {
-        this.$tip = $(this.options.template)
-      }
-      return this.$tip
-    }
-
-  , destroy: function () {
-      this.hide().$element.off('.' + this.type).removeData(this.type)
-    }
-
-  })
-
-
- /* POPOVER PLUGIN DEFINITION
-  * ======================= */
-
-  $.fn.popover = function (option) {
-    return this.each(function () {
-      var $this = $(this)
-        , data = $this.data('popover')
-        , options = typeof option == 'object' && option
-      if (!data) $this.data('popover', (data = new Popover(this, options)))
-      if (typeof option == 'string') data[option]()
-    })
-  }
-
-  $.fn.popover.Constructor = Popover
-
-  $.fn.popover.defaults = $.extend({} , $.fn.tooltip.defaults, {
-    placement: 'right'
-  , trigger: 'click'
-  , content: ''
-  , template: '<div class="popover"><div class="arrow"></div><div class="popover-inner"><h3 class="popover-title"></h3><div class="popover-content"><p></p></div></div></div>'
-  })
-
-}(window.jQuery);
+      test("should destroy popover", function () {
+        var popover = $('<div/>').popover({trigger: 'hover'}).on('click.foo', function(){})
+        ok(popover.data('popover'), 'popover has data')
+        ok(popover.data('events').mouseover && popover.data('events').mouseout, 'popover has hover event')
+        ok(popover.data('events').click[0].namespace == 'foo', 'popover has extra click.foo event')
+        popover.popover('show')
+        popover.popover('destroy')
+        ok(!popover.hasClass('in'), 'popover is hidden')
+        ok(!popover.data('popover'), 'popover does not have data')
+        ok(popover.data('events').click[0].namespace == 'foo', 'popover still has click.foo')
+        ok(!popover.data('events').mouseover && !popover.data('events').mouseout, 'popover does not have any events')
+      })
+      
+})
